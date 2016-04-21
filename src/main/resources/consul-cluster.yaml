@@ -1,0 +1,31 @@
+  services:
+
+  - id: ConsulCluster
+    iconUrl: http://www.apache.org/foundation/press/kit/poweredBy/Apache_PoweredBy.png
+    itemType: template
+    item:
+      services:
+      - type: brooklyn.entity.group.DynamicCluster
+        id: ConsulCluster
+        initialSize: 3
+
+        brooklyn.enrichers:
+         - type: org.apache.brooklyn.enricher.stock.Aggregator
+           brooklyn.config:
+             enricher.sourceSensor: $brooklyn:sensor("host.address")
+             enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.list")
+             enricher.aggregating.fromMembers: true
+
+         - type: org.apache.brooklyn.enricher.stock.Joiner
+           brooklyn.config:
+             enricher.sourceSensor: $brooklyn:sensor("cluster.nodeip.list")
+             enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.string")
+             enricher.joiner.separator: ","
+             enricher.joiner.quote: true
+
+        memberSpec:
+          $brooklyn:entitySpec:
+            type: ConsulNode
+            brooklyn.config:
+              installDevUrandom: true
+

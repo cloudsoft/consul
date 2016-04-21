@@ -1,0 +1,60 @@
+services:
+- type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+  id: consul
+  name: consul
+
+  # Waiting for hosting location for config files - artifactory?
+  # Will need to be modified to your local env.
+
+  brooklyn.initializers:
+  - type: org.apache.brooklyn.core.sensor.password.CreatePasswordSensor
+    brooklyn.config:
+      name: gossip.key
+      password.length: 21
+      password.chars: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
+
+  brooklyn.config:
+    consul.version: "0.6.3"
+    min.cluster.nodes: 3
+    gossip.key: $brooklyn:component("consul").attributeWhenReady("gossip.key")
+    cluster.nodes: $brooklyn:component("ConsulCluster").attributeWhenReady("cluster.nodeip.string")
+    files.install:
+      "classpath://consul/consul_start.sh": tmp/consul_start.sh
+    templates.install:
+      "classpath://consul/server-config.json" : tmp/server-config.json
+
+  shell.env:
+    CONSUL_VERSION: $brooklyn:config("consul.version")
+
+  install.command: |
+
+    sudo mkdir -p /opt/consul/{data,ui,client}
+    sudo mkdir -p /etc/consul.d/ssl
+    sudo mkdir -p /var/log/consul
+    sudo mkdir -p /var/lock/subsys/consul
+
+    # Check if the Consul application files are already present and get if not.
+
+    if [ ! -b "/opt/consul/consul" ]; then
+      sudo wget -nc https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
+      sudo unzip consul_${CONSUL_VERSION}_linux_amd64.zip -d /opt/consul/
+    fi
+
+    if [ ! -b "/opt/consul/ui/index.html" ]; then
+      sudo wget -nc https://releases.hashicorp.com/consul/0.6.3/consul_${CONSUL_VERSION}_web_ui.zip
+      sudo unzip consul_${CONSUL_VERSION}_web_ui.zip -d /opt/consul/ui/
+    fi
+
+  # Waiting for hosting location for config files - artifactory?
+  # Will need to be modified to your local env.
+
+  customize.command: |
+    sudo mv ${INSTALL_DIR}/tmp/consul_start.sh /opt/consul/
+    sudo chmod +x /opt/consul/consul_start.sh
+    sudo mv ${INSTALL_DIR}/tmp/server-config.json /etc/consul.d/
+
+  launch.command:       sudo /opt/consul/consul_start.sh
+
+  checkRunning.command: test -f /var/run/consul.pid && ps -p `cat /var/run/consul.pid`
+
+  stop.command:         sudo kill `cat /var/run/consul.pid` && sleep 1 && kill -9 `cat /var/run/consul.pid`; sudo rm /var/run/consul.pid;
