@@ -17,7 +17,7 @@ services:
     consul.version: "0.6.3"
     min.cluster.nodes: 3
     gossip.key: $brooklyn:component("consul").attributeWhenReady("gossip.key")
-    cluster.nodes: $brooklyn:component("ConsulCluster").attributeWhenReady("cluster.nodeip.string")
+    cluster.nodes: $brooklyn:component("consul-cluster").attributeWhenReady("cluster.nodeip.string")
     files.install:
       "classpath://consul/consul_start.sh": tmp/consul_start.sh
     templates.install:
