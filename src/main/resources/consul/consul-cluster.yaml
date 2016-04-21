@@ -1,12 +1,12 @@
   services:
 
-  - id: ConsulCluster
+  - id: consul-cluster
     iconUrl: http://www.apache.org/foundation/press/kit/poweredBy/Apache_PoweredBy.png
     itemType: template
     item:
       services:
       - type: brooklyn.entity.group.DynamicCluster
-        id: ConsulCluster
+        id: consul-cluster
         initialSize: 3
 
         brooklyn.enrichers:
@@ -25,7 +25,7 @@
 
         memberSpec:
           $brooklyn:entitySpec:
-            type: ConsulNode
+            type: consul-node
             brooklyn.config:
               installDevUrandom: true
 

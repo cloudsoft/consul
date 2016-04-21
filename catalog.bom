@@ -1,0 +1,12 @@
+brooklyn.catalog:
+  brooklyn.libraries:
+  - https://github.com/cloudsoft/consul/releases/download/0.dev/consul-1.0.0-SNAPSHOT.jar
+  items:
+  - id: consul-node
+    version: 0.1.0
+    item:
+      type: classpath://consul/consul-node.yaml
+  - id: consul-cluster
+    version: 0.1.0
+    item:
+      type: classpath://consul/consul-cluster.yaml

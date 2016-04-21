@@ -11,7 +11,7 @@
   </parent>
 
   <groupId>io.cloudsoft.consul</groupId>
-  <artifactId>vault</artifactId>
+  <artifactId>consul</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 
   <name>Hasicorp Consul</name>
