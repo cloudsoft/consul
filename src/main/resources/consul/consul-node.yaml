@@ -21,7 +21,7 @@ services:
     files.install:
       "classpath://consul/consul_start.sh": tmp/consul_start.sh
     templates.install:
-      "classpath://consul/server-config.json" : tmp/server-config.json
+      "classpath://consul/server-config.json": tmp/server-config.json
 
   shell.env:
     CONSUL_VERSION: $brooklyn:config("consul.version")
@@ -34,7 +34,7 @@ services:
     sudo mkdir -p /var/lock/subsys/consul
 
     # Check if the Consul application files are already present and get if not.
-
+    which unzip || sudo apt-get -y install unzip
     if [ ! -b "/opt/consul/consul" ]; then
       sudo wget -nc https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
       sudo unzip consul_${CONSUL_VERSION}_linux_amd64.zip -d /opt/consul/
