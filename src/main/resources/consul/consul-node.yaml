@@ -3,9 +3,6 @@ services:
   id: consul
   name: consul
 
-  # Waiting for hosting location for config files - artifactory?
-  # Will need to be modified to your local env.
-
   brooklyn.initializers:
   - type: org.apache.brooklyn.core.sensor.password.CreatePasswordSensor
     brooklyn.config:
@@ -44,9 +41,6 @@ services:
       sudo wget -nc https://releases.hashicorp.com/consul/0.6.3/consul_${CONSUL_VERSION}_web_ui.zip
       sudo unzip consul_${CONSUL_VERSION}_web_ui.zip -d /opt/consul/ui/
     fi
-
-  # Waiting for hosting location for config files - artifactory?
-  # Will need to be modified to your local env.
 
   customize.command: |
     sudo mv ${INSTALL_DIR}/tmp/consul_start.sh /opt/consul/
