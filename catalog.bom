@@ -8,8 +8,6 @@ brooklyn.catalog:
   - https://github.com/cloudsoft/consul/releases/download/0.3.dev/consul-1.3.0-SNAPSHOT.jar
   items:
   - id: consul-node
-    item:
-      type: classpath://consul/consul-node.yaml
+    include: classpath://consul/consul-node.yaml
   - id: consul-cluster
-    item:
-      type: classpath://consul/consul-cluster.yaml
+    include: classpath://consul/consul-cluster.yaml

@@ -1,25 +1,25 @@
-  services:
-  - type: brooklyn.entity.group.DynamicCluster
+brooklyn.catalog:
+  item:
+    type: brooklyn.entity.group.DynamicCluster
     id: consul-cluster
     initialSize: 3
 
     brooklyn.enrichers:
-     - type: org.apache.brooklyn.enricher.stock.Aggregator
-       brooklyn.config:
-         enricher.sourceSensor: $brooklyn:sensor("host.address")
-         enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.list")
-         enricher.aggregating.fromMembers: true
+    - type: org.apache.brooklyn.enricher.stock.Aggregator
+      brooklyn.config:
+        enricher.sourceSensor: $brooklyn:sensor("host.address")
+        enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.list")
+        enricher.aggregating.fromMembers: true
 
-     - type: org.apache.brooklyn.enricher.stock.Joiner
-       brooklyn.config:
-         enricher.sourceSensor: $brooklyn:sensor("cluster.nodeip.list")
-         enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.string")
-         enricher.joiner.separator: ","
-         enricher.joiner.quote: true
+    - type: org.apache.brooklyn.enricher.stock.Joiner
+      brooklyn.config:
+        enricher.sourceSensor: $brooklyn:sensor("cluster.nodeip.list")
+        enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.string")
+        enricher.joiner.separator: ","
+        enricher.joiner.quote: true
 
     memberSpec:
       $brooklyn:entitySpec:
         type: consul-node
         brooklyn.config:
           installDevUrandom: true
-
