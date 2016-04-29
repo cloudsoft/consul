@@ -25,8 +25,5 @@ This blueprint deploys a Consul cluster with a configurable number of Nodes.  No
 
 ## TODO:
 
-- [ ]  Add sensor to offer consul URL
-- [ ]  Add option to have Brooklyn configure Vault for github auth backend 
-  - add effector to allow user to enter their key to do this.
-- [ ]  Add TLS encryption including Brooklyn generating self signed keys (script for now)
-- [ ]  Add options to blueprint for adding features/config compatible with community catalog
+
+
