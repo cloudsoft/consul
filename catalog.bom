@@ -5,7 +5,8 @@ brooklyn.catalog:
     overview: README.md
     license_url: LICENSE.md
   brooklyn.libraries:
-  - https://github.com/cloudsoft/consul/releases/download/0.3.dev/consul-1.3.0-SNAPSHOT.jar
+  # Ensure this URL is correct for the release you wish to use.
+  - https://github.com/cloudsoft/consul/releases/download/cat-inc-dev/consul-0.1.0-SNAPSHOT.jar
   items:
   - id: consul-node
     include: classpath://consul/consul-node.yaml

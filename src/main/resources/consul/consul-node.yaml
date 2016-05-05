@@ -11,6 +11,13 @@ brooklyn.catalog:
         password.length: 21
         password.chars: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
 
+    brooklyn.enrichers:
+    - type: org.apache.brooklyn.enricher.stock.Transformer
+      brooklyn.config:
+        enricher.sourceSensor: $brooklyn:sensor("service.isUp")
+        enricher.targetSensor: $brooklyn:sensor("consul.webadmin.url")
+        enricher.targetValue: $brooklyn:formatString("http://%s:8500/ui" , $brooklyn:attributeWhenReady("host.address"))
+
     brooklyn.config:
       consul.version: "0.6.3"
       min.cluster.nodes: 3
