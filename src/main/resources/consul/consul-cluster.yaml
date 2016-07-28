@@ -1,25 +1,45 @@
 brooklyn.catalog:
+  id: consul-cluster
   item:
     type: brooklyn.entity.group.DynamicCluster
-    id: consul-cluster
     initialSize: 3
+
+    brooklyn.initializers:
+    - type: org.apache.brooklyn.core.sensor.password.CreatePasswordSensor
+      brooklyn.config:
+        # Shared among consule nodes
+        name: gossip.key
+        password.length: 21
+        password.chars: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
 
     brooklyn.enrichers:
     - type: org.apache.brooklyn.enricher.stock.Aggregator
       brooklyn.config:
+        uniqueTag: nodeip-list
         enricher.sourceSensor: $brooklyn:sensor("host.address")
         enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.list")
         enricher.aggregating.fromMembers: true
 
+    # TODO A sensor to be used in curl-like clients (a single/any IP with an excplicit port)
     - type: org.apache.brooklyn.enricher.stock.Joiner
       brooklyn.config:
         enricher.sourceSensor: $brooklyn:sensor("cluster.nodeip.list")
         enricher.targetSensor: $brooklyn:sensor("cluster.nodeip.string")
         enricher.joiner.separator: ","
-        enricher.joiner.quote: true
+        enricher.joiner.quote: false
+
+    firstMemberSpec:
+      $brooklyn:entitySpec:
+        type: consul-node
+        brooklyn.config:
+          installDevUrandom: true
+          gossip.key: $brooklyn:parent().attributeWhenReady("gossip.key")
+          cluster.nodes: "[]"
 
     memberSpec:
       $brooklyn:entitySpec:
         type: consul-node
         brooklyn.config:
           installDevUrandom: true
+          gossip.key: $brooklyn:parent().attributeWhenReady("gossip.key")
+          cluster.nodes: $brooklyn:parent().attributeWhenReady("cluster.nodeip.list")

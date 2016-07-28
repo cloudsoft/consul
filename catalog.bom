@@ -1,14 +1,12 @@
 brooklyn.catalog:
   description: Consul by Hashicorp. Service discovery and configuration made easy
-  version: 0.1.0
+  version: 0.1.1-SNAPSHOT
   publish:
     overview: README.md
     license_url: LICENSE.md
   brooklyn.libraries:
   # Ensure this URL is correct for the release you wish to use.
-  - https://github.com/cloudsoft/consul/releases/download/cat-inc-dev/consul-0.1.0-SNAPSHOT.jar
+  - https://github.com/cloudsoft/consul/releases/download/cat-inc-dev/consul-0.1.1-SNAPSHOT.jar
   items:
-  - id: consul-node
-    include: classpath://consul/consul-node.yaml
-  - id: consul-cluster
-    include: classpath://consul/consul-cluster.yaml
+  - classpath://consul/consul-node.yaml
+  - classpath://consul/consul-cluster.yaml
