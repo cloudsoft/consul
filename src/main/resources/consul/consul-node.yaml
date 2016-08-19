@@ -1,35 +1,47 @@
 brooklyn.catalog:
+  id: consul-node
   item:
     type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-    id: consul
     name: consul
-
-    brooklyn.initializers:
-    - type: org.apache.brooklyn.core.sensor.password.CreatePasswordSensor
-      brooklyn.config:
-        name: gossip.key
-        password.length: 21
-        password.chars: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
 
     brooklyn.enrichers:
     - type: org.apache.brooklyn.enricher.stock.Transformer
       brooklyn.config:
         enricher.sourceSensor: $brooklyn:sensor("service.isUp")
-        enricher.targetSensor: $brooklyn:sensor("consul.webadmin.url")
+        enricher.targetSensor: $brooklyn:sensor("main.uri")
         enricher.targetValue: $brooklyn:formatString("http://%s:8500/ui" , $brooklyn:attributeWhenReady("host.address"))
 
-    brooklyn.config:
-      consul.version: "0.6.3"
-      min.cluster.nodes: 3
-      gossip.key: $brooklyn:component("consul").attributeWhenReady("gossip.key")
-      cluster.nodes: $brooklyn:component("consul-cluster").attributeWhenReady("cluster.nodeip.string")
-      files.install:
-        "classpath://consul/consul_start.sh": tmp/consul_start.sh
-      templates.install:
-        "classpath://consul/server-config.json": tmp/server-config.json
+    brooklyn.parameters:
+    - name: gossip.key
+      label: Gossip Key (Shared)
+      description: The shared secret key between nodes to authenticate between each other
+      constraints:
+      - required
+    - name: cluster.nodes
+      label: Nodes
+      description: A JSON-formatted list of IP addresses of peer cluster members to connect to. Used in server-config.json.
+      constraints:
+      - required
+      # See DynamicCluster.INITIAL_QUORUM_SIZE
+    - name: cluster.initial.quorumSize
+      label: Minimum number of nodes
+      description: Minimum number of nodes to join the cluster before electing a leader (bootstrapping). Used in server-config.json.
+      type: integer
+      # TODO Should default to initialSize from the cluster
+      default: 3
+      # See BrooklynConfigKeys.SUGGESTED_VERSION
+    - name: install.version
+      label: Version
+      description: Consul version to install
+      default: "0.6.3"
 
     shell.env:
-      CONSUL_VERSION: $brooklyn:config("consul.version")
+      INSTALL_VERSION: $brooklyn:config("install.version")
+      SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+      PUBLIC_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+      CLUSTER_NODES: $brooklyn:config("cluster.nodes")
+      INITIAL_QUORUM_SIZE: $brooklyn:config("cluster.initial.quorumSize")
+      GOSSIP_KEY: $brooklyn:config("gossip.key")
 
     install.command: |
 
@@ -41,22 +53,50 @@ brooklyn.catalog:
       # Check if the Consul application files are already present and get if not.
       which unzip || sudo apt-get -y install unzip
       if [ ! -b "/opt/consul/consul" ]; then
-        sudo wget -nc https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
-        sudo unzip consul_${CONSUL_VERSION}_linux_amd64.zip -d /opt/consul/
+        wget -nc https://releases.hashicorp.com/consul/${INSTALL_VERSION}/consul_${INSTALL_VERSION}_linux_amd64.zip
+        sudo unzip consul_${INSTALL_VERSION}_linux_amd64.zip -d /opt/consul/
       fi
 
       if [ ! -b "/opt/consul/ui/index.html" ]; then
-        sudo wget -nc https://releases.hashicorp.com/consul/0.6.3/consul_${CONSUL_VERSION}_web_ui.zip
-        sudo unzip consul_${CONSUL_VERSION}_web_ui.zip -d /opt/consul/ui/
+        wget -nc https://releases.hashicorp.com/consul/${INSTALL_VERSION}/consul_${INSTALL_VERSION}_web_ui.zip
+        sudo unzip consul_${INSTALL_VERSION}_web_ui.zip -d /opt/consul/ui/
       fi
 
     customize.command: |
-      sudo mv ${INSTALL_DIR}/tmp/consul_start.sh /opt/consul/
+      sudo tee /opt/consul/consul_start.sh <<EOF
+      #! /bin/bash
+      nohup /opt/consul/consul agent -config-file=/etc/consul.d/server-config.json >> /var/log/consul/consul.log 2>&1 &
+      echo \$! >| /var/run/consul.pid
+      EOF
+
       sudo chmod +x /opt/consul/consul_start.sh
-      sudo mv ${INSTALL_DIR}/tmp/server-config.json /etc/consul.d/
 
-    launch.command:       sudo /opt/consul/consul_start.sh
+      sudo tee /etc/consul.d/server-config.json <<EOF
+      {
+        "server": true,
+        "bootstrap_expect": ${INITIAL_QUORUM_SIZE},
+        "node_name": "server_${PUBLIC_ADDRESS}",
+        "bind_addr": "0.0.0.0",
+        "datacenter": "brooklyn",
+        "data_dir": "/opt/consul/data",
+        "advertise_addr": "${SUBNET_ADDRESS}",
+        "client_addr": "0.0.0.0",
+        "encrypt": "${GOSSIP_KEY}q==",
+        "leave_on_terminate": false,
+        "skip_leave_on_interrupt": true,
+        "rejoin_after_leave": true,
+        "retry_interval": "30s",
+        "retry_join": ${CLUSTER_NODES},
+        "ui_dir": "/opt/consul/ui",
+        "log_level": "INFO"
+      }
+      EOF
 
-    checkRunning.command: test -f /var/run/consul.pid && ps -p `cat /var/run/consul.pid`
+    launch.command: sudo /opt/consul/consul_start.sh
 
-    stop.command:         sudo kill `cat /var/run/consul.pid` && sleep 1 && kill -9 `cat /var/run/consul.pid`; sudo rm /var/run/consul.pid;
+    checkRunning.command: |
+      set -e
+      test -f /var/run/consul.pid && ps -p `cat /var/run/consul.pid`
+      curl http://localhost:8500/v1/status/peers | grep $SUBNET_ADDRESS
+
+    stop.command: sudo kill `cat /var/run/consul.pid` && sleep 1 && kill -9 `cat /var/run/consul.pid`; sudo rm /var/run/consul.pid;
